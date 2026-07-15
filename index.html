@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="一周日程与 Todo 计划表">
+  <title>一周计划｜日程与 Todo</title>
+  <style>
+    :root {
+      --ink:#30312d; --muted:#827d73; --cream:#f6efe3; --paper:#fffaf1;
+      --coral:#e97862; --coral-dark:#bd5542; --sage:#809779; --line:rgba(78,70,57,.14);
+    }
+    * { box-sizing:border-box; }
+    html { background:var(--cream); }
+    body {
+      margin:0; color:var(--ink); font-family:Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+      background:linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.13) 1px,transparent 1px),var(--cream);
+      background-size:30px 30px;
+    }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    button:focus-visible,input:focus-visible,select:focus-visible { outline:3px solid rgba(233,120,98,.25); outline-offset:2px; }
+    .app { width:min(1440px,100%); min-height:100vh; margin:auto; padding:42px 48px 34px; }
+    .topbar { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:24px; }
+    .eyebrow,.kicker { display:block; margin-bottom:8px; color:var(--coral-dark); font-size:11px; font-weight:800; letter-spacing:.2em; }
+    h1,h2 { font-family:Georgia,"Noto Serif SC",serif; font-weight:500; }
+    h1 { margin:0; font-size:clamp(40px,5vw,64px); line-height:1; letter-spacing:-.04em; }
+    .subtitle { margin:12px 0 0; color:var(--muted); font-size:14px; }
+    .actions { display:flex; gap:10px; }
+    .btn { padding:11px 17px; border:1px solid var(--line); border-radius:13px; font-weight:700; transition:.18s ease; }
+    .btn:hover { transform:translateY(-2px); }
+    .btn-light { background:rgba(255,250,241,.72); color:var(--ink); }
+    .btn-dark { background:var(--ink); border-color:var(--ink); color:white; box-shadow:0 8px 18px rgba(47,48,43,.14); }
+    #importFile { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+    .summary { display:grid; grid-template-columns:repeat(3,125px) 1fr; align-items:center; gap:18px; margin-bottom:18px; padding:13px 21px; border:1px solid var(--line); border-radius:18px; background:rgba(255,250,241,.56); }
+    .stat { display:flex; align-items:baseline; gap:7px; }
+    .stat strong { font-family:Georgia,serif; font-size:24px; font-weight:500; }
+    .stat span { color:var(--muted); font-size:12px; }
+    .quote { justify-self:end; margin:0; color:var(--sage); font-family:Georgia,"Noto Serif SC",serif; font-size:13px; font-style:italic; }
+    .workspace { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(300px,.72fr); gap:18px; }
+    .panel { padding:25px; border:1px solid var(--line); border-radius:25px; background:rgba(255,250,241,.88); box-shadow:0 18px 45px rgba(88,72,48,.07); }
+    .heading { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:20px; }
+    .heading h2 { margin:0; font-size:24px; }
+    .saved { color:var(--muted); font-size:11px; }
+    .saved::before { content:""; display:inline-block; width:7px; height:7px; margin-right:7px; border-radius:50%; background:var(--sage); box-shadow:0 0 0 4px rgba(128,151,121,.12); }
+    .days { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .day { min-width:0; padding:17px; border:1px solid var(--line); border-radius:19px; background:rgba(255,253,248,.75); }
+    .day-head { display:flex; align-items:center; justify-content:space-between; padding-bottom:14px; border-bottom:1px dashed rgba(78,70,57,.2); }
+    .day-head strong { font-family:Georgia,"Noto Serif SC",serif; font-size:20px; font-weight:500; }
+    .day-head span { margin-left:8px; color:var(--muted); font-size:11px; }
+    .timeline { display:grid; gap:9px; margin-top:15px; }
+    .schedule-card { display:grid; grid-template-columns:48px 1fr 24px; align-items:center; gap:9px; min-height:68px; padding:10px 9px 10px 12px; border:1px solid rgba(78,70,57,.11); border-left:4px solid var(--sage); border-radius:13px; background:#fffdf8; transition:.16s ease; }
+    .schedule-card:hover { transform:translateY(-1px); box-shadow:0 7px 18px rgba(75,62,44,.07); }
+    .schedule-card time { align-self:start; padding-top:4px; color:var(--muted); font-size:11px; font-weight:700; }
+    .tag { color:var(--sage); font-size:9px; font-weight:800; letter-spacing:.08em; }
+    .schedule-card h3 { margin:4px 0 0; font-size:13px; line-height:1.35; }
+    .delete { border:0; background:transparent; color:#aaa398; font-size:19px; opacity:.35; }
+    .delete:hover { color:var(--coral-dark); opacity:1; }
+    .cat-生活 { border-left-color:var(--coral); } .cat-生活 .tag { color:var(--coral-dark); }
+    .cat-运动 { border-left-color:var(--sage); }
+    .cat-社交 { border-left-color:#d2a04e; } .cat-社交 .tag { color:#a9721b; }
+    .cat-学习 { border-left-color:#7b9bb2; } .cat-学习 .tag { color:#527792; }
+    .cat-休息 { border-left-color:#a993b4; } .cat-休息 .tag { color:#80668d; }
+    .pill { padding:6px 10px; border-radius:99px; background:rgba(233,120,98,.11); color:var(--coral-dark); font-size:10px; font-weight:800; }
+    .progress-box { margin-bottom:16px; padding:13px; border-radius:14px; background:rgba(128,151,121,.09); }
+    .progress-label { display:flex; justify-content:space-between; margin-bottom:9px; color:var(--muted); font-size:11px; }
+    .progress-label strong { color:var(--sage); }
+    .track { height:6px; overflow:hidden; border-radius:99px; background:rgba(128,151,121,.17); }
+    .track i { display:block; width:0; height:100%; border-radius:inherit; background:var(--sage); transition:width .3s ease; }
+    .todo-list { display:grid; min-height:132px; }
+    .todo { display:grid; grid-template-columns:24px 1fr 24px; align-items:center; gap:9px; min-height:41px; border-bottom:1px solid rgba(78,70,57,.08); font-size:13px; }
+    .check { width:20px; height:20px; padding:0; border:1.5px solid #b9b2a7; border-radius:7px; background:white; color:white; font-size:12px; }
+    .todo.done .check { border-color:var(--sage); background:var(--sage); }
+    .todo.done .todo-title { color:#aaa398; text-decoration:line-through; }
+    .todo-add { display:flex; gap:8px; margin-top:13px; }
+    .todo-add input { flex:1; min-width:0; padding:10px 12px; border:1px dashed rgba(78,70,57,.23); border-radius:11px; background:rgba(255,255,255,.45); }
+    .todo-add button { width:40px; border:0; border-radius:11px; background:var(--sage); color:white; font-size:20px; }
+    .note { display:flex; gap:11px; align-items:center; margin-top:18px; padding:13px; border:1px solid rgba(233,120,98,.13); border-radius:14px; background:rgba(233,120,98,.07); }
+    .note b { color:var(--coral-dark); font-size:11px; } .note p { margin:0; color:var(--muted); font-size:10px; line-height:1.55; }
+    .empty { margin:22px 0; color:var(--muted); font-size:12px; text-align:center; }
+    .quick-add { position:sticky; bottom:17px; display:grid; grid-template-columns:174px 88px 103px minmax(170px,1fr) 98px 76px; align-items:center; gap:9px; margin-top:18px; padding:13px; border:1px solid rgba(78,70,57,.16); border-radius:19px; background:rgba(255,253,248,.95); box-shadow:0 16px 40px rgba(63,53,40,.14); backdrop-filter:blur(12px); }
+    .quick-label { display:flex; align-items:center; gap:10px; }
+    .plus { display:grid; width:35px; height:35px; place-items:center; border-radius:11px; background:rgba(233,120,98,.12); color:var(--coral-dark); font-size:20px; }
+    .quick-label b,.quick-label small { display:block; } .quick-label b { font-family:Georgia,"Noto Serif SC",serif; font-size:14px; } .quick-label small { margin-top:2px; color:var(--muted); font-size:8px; }
+    .quick-add input,.quick-add select { min-width:0; height:39px; padding:0 10px; border:1px solid rgba(78,70,57,.14); border-radius:11px; background:#fbf7ef; color:var(--ink); font-size:11px; }
+    .add-btn { height:39px; border:0; border-radius:11px; background:var(--coral); color:white; font-size:12px; font-weight:800; box-shadow:0 7px 14px rgba(233,120,98,.2); }
+    .toast { position:fixed; z-index:20; left:50%; bottom:90px; transform:translateX(-50%); padding:10px 16px; border-radius:99px; background:var(--ink); color:white; box-shadow:0 9px 24px rgba(0,0,0,.16); font-size:12px; animation:pop .2s ease; }
+    @keyframes pop { from { opacity:0; transform:translate(-50%,8px); } }
+    @media (max-width:980px) {
+      .app { padding:32px 22px; } .workspace { grid-template-columns:1fr; }
+      .quick-add { position:static; grid-template-columns:repeat(3,1fr); }
+      .quick-label { grid-column:span 3; } .event-title { grid-column:span 2; }
+    }
+    @media (max-width:680px) {
+      .app { padding:25px 13px 18px; } .topbar { align-items:flex-start; flex-direction:column; }
+      .actions,.btn { width:100%; } .summary { grid-template-columns:repeat(3,1fr); padding:12px; }
+      .stat { display:block; text-align:center; } .stat span { display:block; margin-top:2px; } .quote { display:none; }
+      .panel { padding:18px 14px; border-radius:20px; } .days { grid-template-columns:1fr; } .saved { display:none; }
+      .quick-add { grid-template-columns:1fr 1fr; } .quick-label,.event-title,.add-btn { grid-column:span 2; }
+    }
+    @media (prefers-reduced-motion:reduce) { * { transition:none!important; animation:none!important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">MY WEEK</span>
+        <h1>一周计划</h1>
+        <p class="subtitle"><span id="weekRange"></span> · 把时间留给真正重要的事</p>
+      </div>
+      <div class="actions">
+        <input id="importFile" type="file" accept="application/json,.json">
+        <button class="btn btn-light" id="importBtn">↥ 导入</button>
+        <button class="btn btn-dark" id="exportBtn">↧ 导出计划</button>
+      </div>
+    </header>
+
+    <section class="summary" aria-label="本周概览">
+      <div class="stat"><strong id="scheduleCount">0</strong><span>项日程</span></div>
+      <div class="stat"><strong id="todoCount">0</strong><span>个 Todo</span></div>
+      <div class="stat"><strong id="summaryProgress">0%</strong><span>已完成</span></div>
+      <p class="quote">“有计划地松弛，也是一种认真生活。”</p>
+    </section>
+
+    <div class="workspace">
+      <section class="panel">
+        <div class="heading">
+          <div><span class="kicker">SCHEDULE</span><h2>七天，有张有弛</h2></div>
+          <span class="saved">已自动保存</span>
+        </div>
+        <div class="days" id="daysGrid"></div>
+      </section>
+
+      <aside class="panel">
+        <div class="heading">
+          <div><span class="kicker">TO DO</span><h2>本周清单</h2></div>
+          <span class="pill" id="pendingCount">0 待办</span>
+        </div>
+        <div class="progress-box">
+          <div class="progress-label"><span>完成进度</span><strong id="progressText">0%</strong></div>
+          <div class="track"><i id="progressBar"></i></div>
+        </div>
+        <div class="todo-list" id="todoList"></div>
+        <form class="todo-add" id="todoForm">
+          <input id="todoInput" placeholder="添加一个待办…" aria-label="新待办" maxlength="80">
+          <button aria-label="添加待办">+</button>
+        </form>
+        <div class="note"><span>☀</span><p><b>给自己留一点空白</b><br>计划不必填满，舒服最重要。</p></div>
+      </aside>
+    </div>
+
+    <form class="quick-add" id="scheduleForm">
+      <div class="quick-label"><span class="plus">＋</span><div><b>添加日程</b><small>安排一件值得期待的事</small></div></div>
+      <select id="dayInput" aria-label="选择日期"><option value="monday">周一</option><option value="tuesday">周二</option><option value="wednesday">周三</option><option value="thursday">周四</option><option value="friday">周五</option><option value="saturday">周六</option><option value="sunday">周日</option></select>
+      <input id="timeInput" type="time" value="10:00" aria-label="选择时间" required>
+      <input class="event-title" id="titleInput" placeholder="准备做什么？" aria-label="日程标题" maxlength="80" required>
+      <select id="categoryInput" aria-label="选择分类"><option>生活</option><option>运动</option><option>社交</option><option>学习</option><option>休息</option></select>
+      <button class="add-btn">添加</button>
+    </form>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const STORAGE_KEY = 'weekend-planner-standalone-v1';
+      const DAYS = [
+        {key:'monday',label:'周一'}, {key:'tuesday',label:'周二'}, {key:'wednesday',label:'周三'},
+        {key:'thursday',label:'周四'}, {key:'friday',label:'周五'},
+        {key:'saturday',label:'周六'}, {key:'sunday',label:'周日'}
+      ];
+      const seed = {
+        schedule: [
+          {id:'s-mon',day:'monday',time:'09:30',title:'整理本周重点',category:'学习'},
+          {id:'s-tue',day:'tuesday',time:'19:30',title:'运动半小时',category:'运动'},
+          {id:'s-wed',day:'wednesday',time:'20:00',title:'阅读与放松',category:'休息'},
+          {id:'s-thu',day:'thursday',time:'18:30',title:'补充生活用品',category:'生活'},
+          {id:'s-fri',day:'friday',time:'19:00',title:'周五晚餐与散步',category:'社交'},
+          {id:'s1',day:'saturday',time:'09:00',title:'慢慢吃一顿早餐',category:'生活'},
+          {id:'s2',day:'saturday',time:'11:00',title:'公园散步 / 慢跑',category:'运动'},
+          {id:'s3',day:'saturday',time:'15:00',title:'读完手边的书',category:'学习'},
+          {id:'s4',day:'sunday',time:'10:30',title:'整理房间和衣物',category:'生活'},
+          {id:'s5',day:'sunday',time:'14:00',title:'和朋友喝咖啡',category:'社交'},
+          {id:'s6',day:'sunday',time:'20:30',title:'为下周留白',category:'休息'}
+        ],
+        todos: [
+          {id:'t1',title:'采购下周食材',done:true},
+          {id:'t2',title:'给绿植浇水',done:false},
+          {id:'t3',title:'备份手机照片',done:false}
+        ]
+      };
+      const $ = id => document.getElementById(id);
+      const clone = value => JSON.parse(JSON.stringify(value));
+      const makeId = () => Date.now() + '-' + Math.random().toString(16).slice(2);
+      const escapeHtml = text => String(text).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+      const valid = value => value && typeof value === 'object' && Array.isArray(value.schedule) && Array.isArray(value.todos);
+      let data = clone(seed);
+
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (valid(parsed)) data = parsed;
+        }
+      } catch (_) {}
+
+      function weekDates() {
+        const today = new Date();
+        const monday = new Date(today);
+        const dayNumber = today.getDay() || 7;
+        monday.setDate(today.getDate() - dayNumber + 1);
+        const format = date => (date.getMonth() + 1) + '月' + date.getDate() + '日';
+        DAYS.forEach((day,index) => {
+          const date = new Date(monday);
+          date.setDate(monday.getDate() + index);
+          day.date = format(date);
+        });
+        $('weekRange').textContent = DAYS[0].date + ' — ' + DAYS[6].date;
+      }
+
+      function save() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+      }
+
+      function toast(message) {
+        const old = document.querySelector('.toast');
+        if (old) old.remove();
+        const node = document.createElement('div');
+        node.className = 'toast'; node.setAttribute('role','status'); node.textContent = message;
+        document.body.appendChild(node);
+        setTimeout(() => node.remove(), 2400);
+      }
+
+      function renderSchedule() {
+        $('daysGrid').innerHTML = DAYS.map(day => {
+          const items = data.schedule.filter(item => item.day === day.key).sort((a,b) => String(a.time).localeCompare(String(b.time)));
+          const cards = items.length ? items.map(item => `
+            <article class="schedule-card cat-${escapeHtml(item.category)}">
+              <time>${escapeHtml(item.time)}</time>
+              <div><span class="tag">${escapeHtml(item.category)}</span><h3>${escapeHtml(item.title)}</h3></div>
+              <button class="delete" type="button" data-delete-schedule="${escapeHtml(item.id)}" aria-label="删除 ${escapeHtml(item.title)}">×</button>
+            </article>`).join('') : '<p class="empty">还没有安排，给惊喜留个位置。</p>';
+          return `<section class="day">
+            <div class="day-head"><div><strong>${day.label}</strong><span>${day.date}</span></div><span>${items.length} 项安排</span></div>
+            <div class="timeline">${cards}</div>
+          </section>`;
+        }).join('');
+      }
+
+      function renderTodos() {
+        const done = data.todos.filter(item => item.done).length;
+        const progress = data.todos.length ? Math.round(done / data.todos.length * 100) : 0;
+        $('todoList').innerHTML = data.todos.length ? data.todos.map(item => `
+          <div class="todo ${item.done ? 'done' : ''}">
+            <button class="check" type="button" data-toggle-todo="${escapeHtml(item.id)}" aria-label="${item.done ? '标记为未完成' : '标记为完成'}">${item.done ? '✓' : ''}</button>
+            <span class="todo-title">${escapeHtml(item.title)}</span>
+            <button class="delete" type="button" data-delete-todo="${escapeHtml(item.id)}" aria-label="删除 ${escapeHtml(item.title)}">×</button>
+          </div>`).join('') : '<p class="empty">清单空空的，享受轻松的一周吧。</p>';
+        $('todoCount').textContent = data.todos.length;
+        $('pendingCount').textContent = (data.todos.length - done) + ' 待办';
+        $('progressText').textContent = progress + '%';
+        $('summaryProgress').textContent = progress + '%';
+        $('progressBar').style.width = progress + '%';
+      }
+
+      function render() {
+        renderSchedule(); renderTodos();
+        $('scheduleCount').textContent = data.schedule.length;
+        save();
+      }
+
+      $('scheduleForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const title = $('titleInput').value.trim();
+        if (!title) return;
+        data.schedule.push({id:makeId(),day:$('dayInput').value,time:$('timeInput').value,title,category:$('categoryInput').value});
+        $('titleInput').value = ''; render(); toast('日程已添加');
+      });
+
+      $('todoForm').addEventListener('submit', event => {
+        event.preventDefault();
+        const title = $('todoInput').value.trim();
+        if (!title) return;
+        data.todos.push({id:makeId(),title,done:false});
+        $('todoInput').value = ''; render();
+      });
+
+      document.addEventListener('click', event => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        if (button.dataset.deleteSchedule) data.schedule = data.schedule.filter(item => item.id !== button.dataset.deleteSchedule);
+        else if (button.dataset.deleteTodo) data.todos = data.todos.filter(item => item.id !== button.dataset.deleteTodo);
+        else if (button.dataset.toggleTodo) data.todos = data.todos.map(item => item.id === button.dataset.toggleTodo ? {...item,done:!item.done} : item);
+        else return;
+        render();
+      });
+
+      $('exportBtn').addEventListener('click', () => {
+        const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url; link.download = '一周计划-' + new Date().toISOString().slice(0,10) + '.json'; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0); toast('计划已导出');
+      });
+
+      $('importBtn').addEventListener('click', () => $('importFile').click());
+      $('importFile').addEventListener('change', event => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result));
+            if (!valid(parsed)) throw new Error('invalid');
+            data = parsed; render(); toast('计划已成功导入');
+          } catch (_) { toast('导入失败，请选择本页面导出的 JSON 文件'); }
+          event.target.value = '';
+        };
+        reader.readAsText(file);
+      });
+
+      weekDates(); render();
+    })();
+  </script>
+</body>
+</html>
